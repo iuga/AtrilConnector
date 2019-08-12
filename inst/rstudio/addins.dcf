@@ -1,0 +1,4 @@
+Name: Upload & Publish
+Description: Upload & Publish this report on Atril
+Binding: publishAddin
+Interactive: false

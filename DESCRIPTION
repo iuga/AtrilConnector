@@ -1,0 +1,15 @@
+Package: atrilconnector
+Title: Atril Connector
+Version: 0.1.0
+Authors@R: person("Esteban", "Del Boca", email = "first.last@example.com", role = c("aut", "cre"))
+Description: RStudio connector to render, upload and publish *.Rmd files directly on https://www.atril.me
+Depends:
+    R (>= 3.0.0)
+Imports:
+    shiny (>= 0.13),
+    miniUI (>= 0.1.1),
+    rstudioapi (>= 0.4),
+    yaml
+License: MIT
+LazyData: true
+RoxygenNote: 6.1.1
