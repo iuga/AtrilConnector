@@ -6,7 +6,7 @@
 #' [addin](http://rstudio.github.io/rstudioaddins/) that allows you to
 #' render and publish your selected Rmd file directly to Atril.
 #'
-#' @import shiny miniUI rstudioapi yaml
+#' @import shiny miniUI rstudioapi yaml shinyjs readr stringr
 #' @export
 publishAddin <- function() {
   
@@ -23,7 +23,25 @@ publishAddin <- function() {
   }
   
   ui <- miniPage(
+    useShinyjs(),
     miniContentPanel(
+      stableColumnLayout(
+        tags$label('Set up:', id='setupTitle')
+      ),
+      stableColumnLayout(
+        tags$p( id="setupContent",
+          tags$span('Go to '),
+          tags$a('your account settings on Atril.me.', href="https://www.atril.me/#/settings"),
+          tags$span('Copy your private token and paste it here:')
+        )
+      ),
+      stableColumnLayout(
+        textInput(
+          "token", "Your Token:", 
+          width="100%", value=getApiKey(), 
+          placeholder="Copy & Paste your private token from your settings page: https://www.atril.me/#/settings"
+        )
+      ),
       stableColumnLayout(
         tags$label('Title:')
       ),
@@ -35,13 +53,6 @@ publishAddin <- function() {
       ),
       stableColumnLayout(
         uiOutput("description")
-      ),
-      stableColumnLayout(
-        textInput(
-          "token", "Your Token:", 
-          width="100%", value=getApiKey(), 
-          placeholder="Your token is located on your settings page: https://www.atril.me/#/settings"
-        )
       ),
       stableColumnLayout(
         selectInput("community", "Community:", c("Olapic - Content In Motion" = "DsmYGvDt", "Olapic" = "mrKxPuR7")),
@@ -80,6 +91,8 @@ publishAddin <- function() {
       showNotification(paste("There was an error loading the markdown file:", context$path), duration = 5, type="error")
     }
     
+    hideSetupIfNeeded()
+    
     title <- metadata$title
     description <- metadata$subtitle
     output$title <- renderUI({
@@ -87,6 +100,11 @@ publishAddin <- function() {
     })
     output$description <- renderUI({
       tagList(tags$p(description), tags$br())
+    })
+    
+    observeEvent(input$token, {
+      setApiKey(input$token)
+      hideSetupIfNeeded()
     })
     
     observeEvent(input$publish, {
@@ -145,7 +163,7 @@ publishAddin <- function() {
     })
   }
   
-  viewer <- dialogViewer("Upload & Publish on Atril", width = 600, height = 450)
+  viewer <- dialogViewer("Upload & Publish on Atril", width = 650, height = 550)
   runGadget(ui, server, viewer = viewer)
 }
 
@@ -204,9 +222,21 @@ setApiKey <- function(value) {
 parseMetadata <- function(file) {
   yml <- NA
   tryCatch({
-    yml <- yaml::read_yaml(file)
+    file.contents <- read_file(file)
+    file.contents <- str_replace_all(file.contents, '\n', '__NEWLINE__')
+    yaml.contents <- as.character(regmatches(file.contents, gregexpr("(?<=---)(.*?)(?=---)", file.contents, perl = T))[[1]][1])
+    yaml.contents <- str_replace_all(yaml.contents, '__NEWLINE__', '\n')
+    yml <- yaml::yaml.load(yaml.contents)
   }, error = function(e) {
     warning(e)
   })
   yml
+}
+
+hideSetupIfNeeded <- function(){
+  token <- getApiKey()
+  if(token!=''){
+    hideElement(id="setupTitle")
+    hideElement(id="setupContent")
+  }
 }

@@ -2,6 +2,9 @@
 
 export(publishAddin)
 import(miniUI)
+import(readr)
 import(rstudioapi)
 import(shiny)
+import(shinyjs)
+import(stringr)
 import(yaml)
