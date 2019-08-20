@@ -26,16 +26,6 @@ publishAddin <- function() {
     useShinyjs(),
     miniContentPanel(
       stableColumnLayout(
-        tags$label('Set up:', id='setupTitle')
-      ),
-      stableColumnLayout(
-        tags$p( id="setupContent",
-          tags$span('Go to '),
-          tags$a('your account settings on Atril.me.', href="https://www.atril.me/#/settings"),
-          tags$span('Copy your private token and paste it here:')
-        )
-      ),
-      stableColumnLayout(
         textInput(
           "token", "Your Token:", 
           width="100%", value=getApiKey(), 
@@ -55,7 +45,7 @@ publishAddin <- function() {
         uiOutput("description")
       ),
       stableColumnLayout(
-        selectInput("community", "Community:", c("Olapic - Content In Motion" = "DsmYGvDt", "Olapic" = "mrKxPuR7")),
+        selectInput("community", "Community:", c()),
         selectInput("format", "Output format:", c("HTML" = "html_document", "PDF" = "pdf_document"))
       ),
       stableColumnLayout(
@@ -73,8 +63,20 @@ publishAddin <- function() {
   
   server <- function(input, output, session) {
     
+    # Parse the Api Key
+    apiKey <- getApiKey()
+    if(!validateApiKey(apiKey)){
+      apiKey <- rstudioapi::showPrompt('Select your API Key', 'Api Key not found. Copy & Paste your token from the settings page: https://www.atril.me/#/settings here:')
+      if(!validateApiKey(apiKey)){
+        rstudioapi::showDialog("Error", "The Api Key is not valid")
+        stopApp(message("Api key not valid"))
+      }
+    }
+    setApiKey(apiKey)
+    # Add all your communities on the select
+    updateTextInput(session, "token", value = apiKey)
+    
     context <- rstudioapi::getActiveDocumentContext()
-    print(context$contents)
     original <- context$contents
     output$finalPostLink <- renderUI({
       tagList("Direct Link: ...")
@@ -91,10 +93,14 @@ publishAddin <- function() {
       showNotification(paste("There was an error loading the markdown file:", context$path), duration = 5, type="error")
     }
     
-    hideSetupIfNeeded()
-    
     title <- metadata$title
+    if(is.null(title)){
+      stopApp('Title is required on the Notebook header')
+    }
     description <- metadata$subtitle
+    if(is.null(description)){
+      description <- title
+    }
     output$title <- renderUI({
       tagList(tags$p(title))
     })
@@ -104,7 +110,7 @@ publishAddin <- function() {
     
     observeEvent(input$token, {
       setApiKey(input$token)
-      hideSetupIfNeeded()
+      updateSelectInput(session = session, inputId = "community", choices = getCommunities(session))
     })
     
     observeEvent(input$publish, {
@@ -118,7 +124,6 @@ publishAddin <- function() {
       
       # Step 1: Validate the data
       progress$set(value = 1)
-      setApiKey(input$token)
       message = validate(input, context)
       if(!is.na(message)){
         showNotification(message, duration = 5, type="error")
@@ -136,11 +141,15 @@ publishAddin <- function() {
       # Step 3: Upload and Publish
       progress$set(value = 3)
       progress$set(message = 'Uploading and publishing...')
-      finalPostUrl = uploadAndPublish(renderOutput, input$token)
+      title <- metadata$title
+      description <- metadata$subtitle
+      if(is.null(description)){
+        description <- title
+      }
+      finalPostUrl = uploadAndPublish(renderOutput, input$format, apiKey, input$community, title, description)
       
       # Step 4: Finish the process
       progress$set(value = 4)
-      showNotification("Notebook published successfully", duration = 5, type="message")
       output$postUrl <- renderText({finalPostUrl})
       
       url <- a(href=finalPostUrl, finalPostUrl)
@@ -165,78 +174,4 @@ publishAddin <- function() {
   
   viewer <- dialogViewer("Upload & Publish on Atril", width = 650, height = 550)
   runGadget(ui, server, viewer = viewer)
-}
-
-validate <- function(input, context) {
-  if(is.na(context$path) || context$path == ''){
-    return("Notebook not recognized")
-  }  
-  if(!endsWith(tolower(context$path), '.rmd')){
-    return("We are expecting a .Rmd notebook")
-  }
-  if(!input$format %in% c('html_document', 'pdf_document')){
-    return("Output format not recognized")
-  }
-  if(is.na(input$token) || input$token == ''){
-    return("Token is required for publishing. Please copy&paste it from your settings page.")
-  }
-  if(is.na(input$community) || input$community == ''){
-    return("Community is required for publishing")
-  }
-  NA
-}
-
-renderMarkdown <- function(path, format) {
-  tryCatch({
-    rmarkdown::render(path, format)
-  }, error = function(e) {
-    warning(e)
-  })
-}
-
-uploadAndPublish <- function(output, token) {
-  Sys.sleep(4)
-  'https://www.atril.me/posts/helpdesk/kayAafeN'
-}
-
-stableColumnLayout <- function(...) {
-  dots <- list(...)
-  n <- length(dots)
-  width <- 12 / n
-  class <- sprintf("col-xs-%s col-md-%s", width, width)
-  fluidRow(
-    lapply(dots, function(el) {
-      div(class = class, el)
-    })
-  )
-}
-
-getApiKey <- function() {
-  Sys.getenv('ATRIL_TOKEN')
-}
-
-setApiKey <- function(value) {
-  Sys.setenv('ATRIL_TOKEN' = value)
-}
-
-parseMetadata <- function(file) {
-  yml <- NA
-  tryCatch({
-    file.contents <- read_file(file)
-    file.contents <- str_replace_all(file.contents, '\n', '__NEWLINE__')
-    yaml.contents <- as.character(regmatches(file.contents, gregexpr("(?<=---)(.*?)(?=---)", file.contents, perl = T))[[1]][1])
-    yaml.contents <- str_replace_all(yaml.contents, '__NEWLINE__', '\n')
-    yml <- yaml::yaml.load(yaml.contents)
-  }, error = function(e) {
-    warning(e)
-  })
-  yml
-}
-
-hideSetupIfNeeded <- function(){
-  token <- getApiKey()
-  if(token!=''){
-    hideElement(id="setupTitle")
-    hideElement(id="setupContent")
-  }
 }

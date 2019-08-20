@@ -1,6 +1,6 @@
 # Atril Connector
 
-RStudio connector to render, upload and publish *.Rmd files directly on https://www.atril.me
+Publishing your notebooks from [RStudio](https://www.rstudio.com) to [Atril](https://www.atril.me/) is extremely simple. Once you are satisfied with your work and ready to publish, just click the 'Upload & Publish' button on the Addins dropdown, and follow the instructions. Once published, the post will become available with the given short-link. You can also update previous reports following the same steps.
 
 # Quick Start
 
