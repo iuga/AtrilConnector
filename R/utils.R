@@ -41,21 +41,28 @@ stableColumnLayout <- function(...) {
 }
 
 getApiKey <- function() {
-    Sys.getenv('ATRIL_TOKEN')
+    config.file <- file.path(path.expand('~'), '.atril')
+    if(file.exists(config.file)){
+        content <- yaml::read_yaml(config.file)
+        return(content$api_key)    
+    }
+    return('')
 }
 
 setApiKey <- function(value) {
-    Sys.setenv('ATRIL_TOKEN' = value)
+    config.file <- file.path(path.expand('~'), '.atril')
+    content <- list('api_key'=as.character(value))
+    yaml::write_yaml(content, config.file)
 }
 
 parseMetadata <- function(file) {
     yml <- NA
-    tryCatch({
+    yml <- tryCatch({
         file.contents <- read_file(file)
         file.contents <- str_replace_all(file.contents, '\n', '__NEWLINE__')
         yaml.contents <- as.character(regmatches(file.contents, gregexpr("(?<=---)(.*?)(?=---)", file.contents, perl = T))[[1]][1])
         yaml.contents <- str_replace_all(yaml.contents, '__NEWLINE__', '\n')
-        yml <- yaml::yaml.load(yaml.contents)
+        yaml::yaml.load(yaml.contents)
     }, error = function(e) {
         warning(e)
     })
@@ -63,7 +70,7 @@ parseMetadata <- function(file) {
 }
 
 validateApiKey <- function(apiKey){
-    nchar(apiKey) == 32
+    return(nchar(apiKey) == 32)
 }
 
 getCommunities <- function(session){
@@ -74,19 +81,21 @@ getCommunities <- function(session){
     
     token <- getApiKey()
     
-    response <- tryCatch({
-        jsonlite::fromJSON(paste0('https://www.atril.me/v1/external/communities?api_key=', token))},
-        error = function(e){
-            stopApp('Error connecting the server')
-        }
-    )
+    response <-httr::GET(paste0('https://www.atril.me/v1/external/communities?api_key=', token))
     
-    progress$set(value = 2)
-    comms <- response$communities
-    communities <- setNames(comms$uid, as.character(comms$name))
-    
-    progress$set(value = 3)
-    communities
+    if(response$status == 200){
+        progress$set(value = 2)
+        jsonContent <-  httr::content(response, simplifyVector = T) 
+        comms <- jsonContent$communities
+        communities <- setNames(comms$uid, as.character(comms$name))
+        progress$set(value = 3)
+        return(communities)
+    } else {
+        showNotification("There was an error listing your communities", duration = 5, type="error")
+        stopApp('Unable to list your communities')
+        progress$set(value = 3)
+        return(c())
+    }
 }
 
 uploadAndPublish <- function(output, format, apiKey, communityUid, title, description) {

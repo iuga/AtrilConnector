@@ -12,8 +12,9 @@ devtools::install_github("iuga/AtrilConnector")
 ```
 
 ## Usage
+
 1. Open the notebook you want to publish
-2. Open the addin on RStudio
-3. Copy&Paste your private token from your [settings page](https://www.atril.me/#/settings)
+2. Open the addin on RStudio, click on "Upload & Publish"
+3. Copy & Paste your private token from your [settings page](https://www.atril.me/#/settings)
 4. Select the destination community
 5. Click on Publish and wait for the final URL

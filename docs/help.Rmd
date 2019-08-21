@@ -1,0 +1,40 @@
+---
+title: "Atril Connector for RStudio"
+subtitle: How to install, configure and use the RStudio addin for publish on Atril
+output:
+  html_document:
+    self_contained: false
+---
+
+<style type="text/css">
+    @import url("https://www.atril.me/clean.v1.css");
+</style>
+
+![Photo from @heytowner via Unsplash](https://images.unsplash.com/photo-1472148083604-64f1084980b9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=750&q=80)
+
+Publishing your notebooks from RStudio to Atril is extremely simple. Once you are satisfied with your work and ready to publish, just click the 'Upload & Publish' button on the Addins dropdown, and follow the instructions. Once published, the post will become available with the given short-link.
+
+# Quick Start
+
+The project is hosted on [Github](https://github.com/iuga/AtrilConnector) but the installation is super easy and you need only a couple of seconds:
+
+```
+install.packages("devtools")
+devtools::install_github("iuga/AtrilConnector")
+```
+
+After complete, you can launch the addin from the `Addins` dropdown on the RStudio IDE or `Tools > Addins > Browse addings ... > atrilconnector > Execute`.
+
+# Configuration
+
+The addin only needs your api key to work that you can find on your [settings page](https://www.atril.me/#/settings). The first time the addin is launched will ask you this value, it will store it on a configuration file in your home folder: `~/.atril`. You can modify the file if needed.
+
+# Usage
+
+1. Open the `.Rmd` file you want to compile and publish.
+2. Click on "Upload & Publish" option on the Atril connector addin.
+3. You will see the title and description of your report extracted from the title and subtitle from the yml header. Only the title is requried.
+4. Select the community you want to puslish in. You will see only the ones you have access.
+5. Choose the output format, we recommend `HTML`
+6. Click on "Upload & Publish"
+7. Open the final post link

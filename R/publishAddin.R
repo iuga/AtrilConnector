@@ -63,16 +63,26 @@ publishAddin <- function() {
   
   server <- function(input, output, session) {
     
+    output$title <- renderUI({
+      tagList(tags$p('...'))
+    })
+    output$description <- renderUI({
+      tagList(tags$p('...'))
+    })
+    
     # Parse the Api Key
     apiKey <- getApiKey()
     if(!validateApiKey(apiKey)){
       apiKey <- rstudioapi::showPrompt('Select your API Key', 'Api Key not found. Copy & Paste your token from the settings page: https://www.atril.me/#/settings here:')
+      apiKey <- ifelse(is.null(apiKey), '', apiKey)
       if(!validateApiKey(apiKey)){
-        rstudioapi::showDialog("Error", "The Api Key is not valid")
+        rstudioapi::showDialog("Error", "This adding needs a valid Api Key to work")
         stopApp(message("Api key not valid"))
+        return()
       }
     }
     setApiKey(apiKey)
+    
     # Add all your communities on the select
     updateTextInput(session, "token", value = apiKey)
     
@@ -96,6 +106,7 @@ publishAddin <- function() {
     title <- metadata$title
     if(is.null(title)){
       stopApp('Title is required on the Notebook header')
+      return()
     }
     description <- metadata$subtitle
     if(is.null(description)){
